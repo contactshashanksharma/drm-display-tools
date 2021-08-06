@@ -12,12 +12,14 @@ A very basic and tiny tool which:
  
  
  It just needs libDRM on a Linux based system
+ 
  $ sudo apt install libdrm-dev
  
  # Building:
  
  
  $ make clean
+ 
  $ make
  
  # Running:
