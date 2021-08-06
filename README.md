@@ -24,8 +24,7 @@ A very basic and tiny tool which:
  
  # Running:
  
- 
- # Go to a non-gui console
+ Go to a non-gui console and run
  
  $ sudo chvt 4 (or maybe ctrl + alt + F4)
  
