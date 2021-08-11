@@ -41,34 +41,34 @@ struct drm_display {
 
 static void dump_videomodes(drmModeConnector *conn)
 {
-    int i;
-    drmModeModeInfo *mode;
+	int i;
+	drmModeModeInfo *mode;
 
-    printf("\n\t================================\n");
-    for (i = 0; i < conn->count_modes; i ++) {
-        mode = &conn->modes[i];
-        printf("\tMode:%s %dx%d clock %d\n", mode->name, mode->hdisplay, mode->vdisplay, mode->clock);
-    }
-    printf("\t================================\n");
+	printf("\n\t================================\n");
+	for (i = 0; i < conn->count_modes; i ++) {
+		mode = &conn->modes[i];
+		printf("\tMode:%s %dx%d clock %d\n", mode->name, mode->hdisplay, mode->vdisplay, mode->clock);
+	}
+	printf("\t================================\n");
 }
 
 static void dump_props(int fd, uint32_t *props, int prop_count)
 {
-    int i;
-    drmModePropertyPtr prop;
+	int i;
+	drmModePropertyPtr prop;
 
-    if (!prop_count || !props)
-        return;
+	if (!prop_count || !props)
+	return;
 
-    printf("\n\t================================\n");
-    for (i = 0; i < prop_count; i++) {
-        prop = drmModeGetProperty(fd, props[i]);
-        if (prop) {
-            printf("\t %s:id %d\n", prop->name, prop->prop_id);
-            drmModeFreeProperty(prop);
-        }
-    }
-    printf("\t================================\n");
+	printf("\n\t================================\n");
+	for (i = 0; i < prop_count; i++) {
+		prop = drmModeGetProperty(fd, props[i]);
+		if (prop) {
+			printf("\t %s:id %d\n", prop->name, prop->prop_id);
+			drmModeFreeProperty(prop);
+		}
+	}
+	printf("\t================================\n");
 }
 
 static void paint(struct fb *fb)
@@ -197,18 +197,18 @@ static int get_drm_display(int drm_fd, struct drm_display *display)
 
 	if (be_loud ) {
 		printf("Resources of card: CRTCs:%d Connectors:%d Encoders:%d FBs: %d\n",
-                res->count_crtcs, res->count_connectors, res->count_encoders,
-                res->count_fbs);
+			res->count_crtcs, res->count_connectors, res->count_encoders,
+			res->count_fbs);
 	}
 
 	/* Get the first connected connector */
 	for (i = 0; i < res->count_connectors; i++) {
 		conn = drmModeGetConnector(drm_fd, res->connectors[i]);
 
-        if (be_loud) {
-            printf("Connector %d: properties: %d\n", conn->connector_id, conn->count_props);
-            dump_props(drm_fd, conn->props, conn->count_props);
-        }
+		if (be_loud) {
+			printf("Connector %d: properties: %d\n", conn->connector_id, conn->count_props);
+			dump_props(drm_fd, conn->props, conn->count_props);
+		}
 
 		if (conn->connection == DRM_MODE_CONNECTED)
 			break;
@@ -227,8 +227,8 @@ static int get_drm_display(int drm_fd, struct drm_display *display)
 
 	if (be_loud && conn->count_modes) {
 		printf("Supported Videomodes on connector:%d\n", conn->count_modes);
-        dump_videomodes(conn);
-    }
+		dump_videomodes(conn);
+	}
 
 	/* Get the preferred resolution */
 	for (i = 0; i < conn->count_modes; i++) {
