@@ -1,4 +1,4 @@
-# drm-display-tool
+# drm-display-tools
 
 
 A very basic and tiny tool which:
