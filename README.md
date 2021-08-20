@@ -31,7 +31,12 @@ A very basic and tiny libdrm based tools which:
  
  # Running:
  
- Go to a non-gui console and run
+ # run drm_display_info, From any terminal:
+ 
+ $ ./drm_display_info
+ 
+ 
+ # To run drm_draw_pixels, go to a non-gui console and run
  
  $ sudo chvt 4 (or maybe ctrl + alt + F4)
  
