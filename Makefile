@@ -4,6 +4,8 @@ all:
 
 clean:
 	rm drm_draw_pixels
+	rm drm_display_info
 
 install:
 	sudo cp drm_draw_pixels /usr/bin/
+	sudo cp drm_display_info /usr/bin/
