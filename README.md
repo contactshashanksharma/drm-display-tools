@@ -1,12 +1,19 @@
 # drm-display-tools
 
-
-A very basic and tiny tool which:
+drm-draw-pixels:
+A very basic and tiny libdrm based tools which:
  - creates a framebuffer
  - fills a pattern on this buffer
  - and shows this buffer on the display
  
  Using the libDRM and KMS APIs.
+ 
+ drm-display-info:
+ Another basic tool to dump available resources of a DRM card
+ - prints available CRTCs
+ - prints available Connectors (and properties of first connector)
+ - prints available Encoders
+ - prints available planes
  
  # Dependencies:
  
