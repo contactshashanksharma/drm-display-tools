@@ -52,9 +52,9 @@ fbdev_draw: A very basic fbdev based tool, which:
 
 # Building:
 
- $ make fbdev
+ $ make fbdev_clean
 
- $ make
+ $ make fbdev
 
  # Running:
 
