@@ -29,15 +29,14 @@ A very basic and tiny libdrm based tools which:
  
  $ make
  
- # Running:
+ # Using these tools:
  
- # To run drm_display_info, from any terminal, simply:
- 
+ To run drm_display_info, from any terminal, simply:
  
  $ ./drm_display_info
  
  
- # To run drm_draw_pixels, go to a non-gui console and run
+ To run drm_draw_pixels, go to a non-gui console and run
  
  
  $ sudo chvt 4 (or maybe ctrl + alt + F4)
