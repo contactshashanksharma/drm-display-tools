@@ -41,3 +41,25 @@ A very basic and tiny libdrm based tools which:
  $ sudo chvt 4 (or maybe ctrl + alt + F4)
  
  $ ./drm_draw_pixels
+
+
+# fbdev_tools: Framebuffer ecosystem based graphics tools
+
+fbdev_draw: A very basic fbdev based tool, which:
+- opens the framebuffer device (fb0)
+- maps the buffer memory
+- draws a tricolor pattern on screen
+
+# Building:
+
+ $ make fbdev
+
+ $ make
+
+ # Running:
+
+# To run fbdev_draw, go to a non-gui console and run
+
+ $ sudo chvt 4 (or maybe ctrl + alt + F4)
+
+ $ sudo ./fbdev_draw

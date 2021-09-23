@@ -9,3 +9,12 @@ clean:
 install:
 	sudo cp drm_draw_pixels /usr/bin/
 	sudo cp drm_display_info /usr/bin/
+
+fbdev:
+	gcc -o fbdev_draw fbdev_draw.c -g
+
+fbdev_clean:
+	rm fbdev_draw
+
+fbdev_install:
+	sudo cp fbdev_draw /usr/bin/
