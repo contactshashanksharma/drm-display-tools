@@ -3,7 +3,7 @@
 drm-draw-pixels:
 A very basic and tiny libdrm based tools which:
  - creates a framebuffer
- - fills a pattern on this buffer
+ - fills multiple patterns on this buffer
  - and shows this buffer on the display
  
  Using the libDRM and KMS APIs.
@@ -26,7 +26,16 @@ A very basic and tiny libdrm based tools which:
  
  
  $ make clean
+
+ # Build and Install the helper paint library first
+
+ $ make paint
+
+ $ make paint-install
+
  
+ # Build the tools now
+
  $ make
  
  # Using these tools:
