@@ -1,3 +1,25 @@
+/*
+ * Copyright 2022 Shashank Sharma (contactshashanksharma@gmail.com)
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+ * THE COPYRIGHT HOLDER(S) OR AUTHOR(S) BE LIABLE FOR ANY CLAIM, DAMAGES OR
+ * OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+ * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ * OTHER DEALINGS IN THE SOFTWARE.
+ *
+ */
+
 #include <stdio.h>
 /* open*/
 #include <sys/types.h>
@@ -14,6 +36,48 @@
 #include <drm/drm_fourcc.h>
 
 #define CARD_0 "/dev/dri/card0"
+
+struct drm_format_name {
+        char a;
+        char b;
+        char c;
+        char d;
+};
+
+static void drm_print_format_name(uint32_t code)
+{
+        struct drm_format_name name;
+
+	if (!code)
+		return;
+
+    name.a = code & 0xff;
+    name.b = ((code & (0xff << 8)) >> 8);
+    name.c = ((code & (0xff << 16)) >> 16);
+    name.d = ((code & (0xff << 24)) >> 24);
+
+	if (name.a == 'X' && name.b == 'R') {
+		printf("Format name XBGR%c%c\n", name.c, name.d);
+		return;
+	}
+
+    if (name.a == 'R' && name.b == 'X') {
+		printf("Format name RGBX%c%c\n", name.c, name.d);
+		return;
+	}
+
+    if (name.a == 'A' && name.b == 'R') {
+		printf("Format name ABGR%c%c\n", name.c, name.d);
+		return;
+	}
+
+    if (name.a == 'R' && name.b == 'A') {
+		printf("Format name RGBA%c%c\n", name.c, name.d);
+		return;
+	}
+
+    printf("Format name %c%c%c%c\n", name.a, name.b, name.c, name.d);
+}
 
 int main()
 {
@@ -110,6 +174,7 @@ int main()
             printf("Supported Formats:\n");
             for (fmt = 0; fmt < p->count_formats; fmt++) {
                 printf("0x%x ", p->formats[fmt]);
+		drm_print_format_name(p->formats[fmt]);
                 if (fmt && fmt%10 == 0)
                     printf("\n");
             }
@@ -123,4 +188,4 @@ int main()
     drmModeFreeResources(res);
     close(fd);
     return 0;
-}   
+}
