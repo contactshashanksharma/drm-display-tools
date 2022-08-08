@@ -1,3 +1,25 @@
+/*
+ * Copyright 2022 Shashank Sharma (contactshashanksharma@gmail.com)
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+ * THE COPYRIGHT HOLDER(S) OR AUTHOR(S) BE LIABLE FOR ANY CLAIM, DAMAGES OR
+ * OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+ * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ * OTHER DEALINGS IN THE SOFTWARE.
+ *
+ */
+
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
@@ -8,6 +30,7 @@
 
 #include <xf86drm.h>
 #include <xf86drmMode.h>
+#include "paint.h"
 
 /* Defaults to init framebuffer */
 #define XRES 1920
@@ -71,35 +94,48 @@ static void dump_props(int fd, uint32_t *props, int prop_count)
 	printf("\t================================\n");
 }
 
-static void paint(struct fb *fb)
+static void paint_white(struct fb *fb)
 {
-	int y, x;
-	int pitch = fb->stride;
-	char *buf = fb->mapped_fb;
+	paint_a_buffer_white(fb->mapped_fb, fb->x, fb->y, fb->d);
+}
 
-	/* Paint it red solid */
-	for (y = 0; y < fb->y/3; y++) {
-		uint32_t *pixel = (uint32_t *)&(fb->mapped_fb[y * pitch]);
+static void blank_subbuffer(struct fb *fb, int xres, int yres, int x_off, int y_off, int x, int y)
+{
+	blank_a_buffer_region(fb->mapped_fb, xres, yres, x_off, y_off, x, y, 4);
+}
 
-		for (x = 0; x < fb->x; x++)
-		pixel[x] = (0xFF << 16);
+static void paint_subbuffer(struct fb *fb, int xres, int yres, int x_off, int y_off, int x, int y)
+{
+	paint_a_buffer_region_tricolor(fb->mapped_fb, xres, yres, x_off, y_off, x, y, 4);
+}
+
+static void paint_tricolor(struct fb *fb)
+{
+	paint_buffer_tricolor(fb->mapped_fb, fb->x, fb->y, 4);
+}
+
+static int display_drm_buffer(int drm_fd, struct fb *fb, struct drm_display *display)
+{
+	int ret; 
+
+	if (!fb || !display || drm_fd < 0) {
+		printf("Can't display, invalid inputs\n");
+		return -1;
 	}
 
-	/* Paint it green solid */
-	for (y = fb->y/3; y < (2 * fb->y)/3; y++) {
-		uint32_t *pixel = (uint32_t *)&(fb->mapped_fb[y * pitch]);
-
-		for (x = 0; x < fb->x; x++)
-		pixel[x] = (0xFF << 8);
+	/* Set the mode and fb on CRTC */
+	ret = drmModeSetCrtc(drm_fd, display->crtc_id,
+			fb->fb_fd, 0, 0,
+			&display->conn_id, 1,
+			&display->mode);
+	if (ret < 0) {
+		printf("Set CRTC fail, ret =%d\n", ret);
+		return -1;
 	}
 
-	/* Paint it blue solid */
-	for (y = (2 * fb->y)/3; y < fb->y; y++) {
-		uint32_t *pixel = (uint32_t *)&(fb->mapped_fb[y * pitch]);
-
-		for (x = 0; x < fb->x; x++)
-		pixel[x] = 0xFF;
-	}
+	/* Keep the buffer on screen for a few seconds */
+	sleep(3);
+	return 0;
 }
 
 static int create_drm_buffer(int drm_fd, struct fb *fb)
@@ -294,11 +330,10 @@ int main(void)
 	int ret = 0;
 	struct fb fb = {0,};
 	struct drm_display display = {0, };
-
-	/* Init buffer size */
-	fb.x = XRES;
-	fb.y = YRES;
-	fb.d = DEPTH_BYTES_PER_PIXEL;
+	char *sub;
+	int sub_pitch;
+	int sub_h = 600;
+	int sub_v = 200;
 
 	drm_fd = open(CARD_0, O_RDWR);
 	if (drm_fd < 0) {
@@ -316,6 +351,7 @@ int main(void)
 	/* Set the fb size as per the mode, and create a framebuffer */
 	fb.x = display.mode.hdisplay;
 	fb.y = display.mode.vdisplay;
+	fb.d = DEPTH_BYTES_PER_PIXEL;
 	ret = create_drm_buffer(drm_fd, &fb);
 	if (ret) {
 		printf("Failed to create a drm buffer\n");
@@ -323,27 +359,61 @@ int main(void)
 		goto close;
 	}
 
-	/* Draw something on buffer */
-	paint(&fb);
+	/* Draw tricolor lines on buffer */
+	paint_tricolor(&fb);
 
-	/* Set the mode and fb on CRTC */
-	ret = drmModeSetCrtc(drm_fd, display.crtc_id,
-			fb.fb_fd, 0, 0,
-			&display.conn_id, 1,
-			&display.mode);
-	if (ret < 0) {
-		printf("Set CRTC fail, ret =%d\n", ret);
+	ret = display_drm_buffer(drm_fd, &fb, &display);
+	if (ret) {
+		printf("Failed to display buffer of %dx%d\n", fb.x, fb.y);
 		ret = -1;
 		goto release_buffer;
 	}
 
-	/* Keep the buffer on screen for a few seconds */
-	sleep(3);
+	/* paint something else */
+	paint_subbuffer(&fb, fb.x, fb.y, 200, 200, 1280, 720);
+	ret = display_drm_buffer(drm_fd, &fb, &display);
+	if (ret) {
+		printf("Failed to display buffer 1920x1080\n");
+		ret = -1;
+	}
+
+	/* blank some pixels */
+	blank_subbuffer(&fb, fb.x, fb.y, 400, 400, sub_h, sub_v);
+	ret = display_drm_buffer(drm_fd, &fb, &display);
+	if (ret) {
+		printf("Failed to display buffer 1920x1080\n");
+		ret = -1;
+	}
+
+	sub = get_a_subbuffer_copy(fb.mapped_fb, fb.x, fb.y, 400, 400, sub_h, sub_v, 4);
+	if (!sub) {
+		printf("Failed to get the subbuffer\n");
+		ret = -1;
+	}
+	sub_pitch = sub_h * 4;
+
+	/* White paint the buffer first */
+	paint_white(&fb);
+	ret = display_drm_buffer(drm_fd, &fb, &display);
+	if (ret) {
+		printf("Failed to display white-buffer\n");
+		ret = -1;
+	}
+
+	/* Display the subbuffer now at 0,0 but maintain the pitch of small buffer */
+	for (ret = 0; ret < sub_v; ret++)
+		memcpy(fb.mapped_fb + ret * fb.stride, sub, sub_pitch);
+
+	ret = display_drm_buffer(drm_fd, &fb, &display);
+	if (ret) {
+		printf("Failed to display sub-buffer\n");
+		ret = -1;
+	}
 
 release_buffer:
 	release_drm_buffer(drm_fd, &fb);
 
 close:
 	close(drm_fd);
-	return 0;
+	return ret;
 }
