@@ -25,26 +25,46 @@
 #include <stdint.h>	
 #include <malloc.h>
 #include <wchar.h>
+#include "paint.h"
 
-enum color {
-	black = 0,
-	red,
-	green,
-	blue,
-	white,
-};
+static struct clr_hash_table *table;
 
-uint32_t clr_val[] = {
-	0, 0x00FF0000, 0x0000FF00, 0x000000FF, 0xFFFFFFFF
-};
+/* ============ Color hash table related functions =========== */
 
-static void paint_buffer_single_color(char *buf, int bsz, int bpp, uint32_t val)
+void init_clr_hash(int num, uint32_t *clr_val)
 {
-	int *ib = (int *)buf;
-	int n_pixels = bsz/bpp;
+	int i;
 
-	wmemset(ib, val, n_pixels);
+	table = malloc(sizeof(struct clr_hash_table));
+	for (i = 0; i < num; i++) {
+		table->cval[i] = malloc(sizeof(struct clr_hash_data));
+		table->cval[i]->clr = i; //enum color
+		table->cval[i]->val = clr_val[i];		
+	}
+	table->entries = num;
 }
+
+uint64_t hash_get_clr_val(int key)
+{
+	if (!table || key < 0 || key > table->entries) {
+		printf("Invalid input\n");
+		return -1;
+	}
+
+	return table->cval[key]->val;
+}
+
+void delete_clr_hash(int key)
+{
+	int i = 0;
+
+	for (i = 0; i < table->entries; i++)
+		free(table->cval[i]);
+	free(table);
+}
+
+
+/* ============ Drawing functions =========== */
 
 static void paint_a_line(char *buf, int pitch, uint32_t val)
 {
@@ -52,6 +72,34 @@ static void paint_a_line(char *buf, int pitch, uint32_t val)
 	int *ib = (int *)buf;
 
 	wmemset(ib, val, n_pixels);
+}
+
+void _paint_x(char *buf, int xres, int x, uint32_t val)
+{
+	uint32_t *pixel = buf;
+
+	if (x < xres) {
+		pixel[x++] = val;
+		_paint_x(buf, xres, x, val);
+	}
+}
+
+void _paint_y(char *fb, int xres, int yres, int y, int bpp, uint32_t val)
+{
+	int pitch = xres * bpp;
+
+	if (y < yres) {
+		_paint_x(fb + y++ * pitch, xres, 0, val);
+		_paint_y(fb, xres, yres, y, bpp, val);
+	}
+}
+
+void paint_buf_recursively(char *fb, int xres, int yres, int bpp, int val)
+{
+	if (!fb || !xres || !yres)
+		return;
+
+	_paint_y(fb, xres, yres, 0, bpp, val);
 }
 
 void blank_a_buffer_region(char *fb, int X, int Y, int x_off, int y_off, int h, int v, int bpp)
@@ -65,10 +113,17 @@ void blank_a_buffer_region(char *fb, int X, int Y, int x_off, int y_off, int h, 
 	char *sb;
 
 	sb = fb + y_off * pitch + x_off * bpp;
+
+#ifdef LINE_BY_LINE
 	for (j = 0; j < v; j++)
-		paint_a_line(sb + j * pitch, sb_pitch, clr_val[black]);
+		paint_a_line(sb + j * pitch, sb_pitch, hash_get_clr_val(red));
+#else
+	for (j = 0; j < v; j++)
+		_paint_x(sb + j * pitch, h, 0, hash_get_clr_val(black));
+#endif
 }
 
+#ifdef LINE_BY_LINE
 void paint_a_buffer_region_solid(char *fb, int X, int Y, int x_off, int y_off, int h, int v, int bpp, int clr_val)
 {
 	int ret = 0;
@@ -86,10 +141,15 @@ void paint_a_buffer_region_solid(char *fb, int X, int Y, int x_off, int y_off, i
 	for (j = 0; j < v; j++)
 		paint_a_line(sb + j * pitch, sb_pitch, clr_val);
 }
+#endif
 
 void paint_a_buffer_white(char *fb, int X, int Y, int bpp)
 {
-	paint_a_buffer_region_solid(fb, X, Y, 0, 0, X, Y, bpp, clr_val[white]);
+#ifdef LINE_BY_LINE
+	paint_a_buffer_region_solid(fb, X, Y, 0, 0, X, Y, bpp, hash_get_clr_val(red));
+#else
+	paint_buf_recursively(fb, X, Y, bpp, hash_get_clr_val(white));
+#endif
 }
 
 char *get_a_subbuffer_copy(char *fb, int X, int Y, int xoff, int yoff, int h, int v, int bpp)
@@ -126,16 +186,31 @@ void paint_a_buffer_region_tricolor(char *fb, int X, int Y, int x_off, int y_off
 	char *sb;
 
 	memset(fb, 0, bsz);
-
 	sb = fb + y_off * pitch + x_off * bpp;
 
+#ifdef LINE_BY_LINE
 	for (j = 0; j < v/3; j++)
-		paint_a_line(sb + j * pitch, sb_pitch, clr_val[red]);
+		paint_a_line(sb + j * pitch, sb_pitch, hash_get_clr_val(red));
 	for (j = v/3; j < (2 * v)/3; j++)
-		paint_a_line(sb + j * pitch, sb_pitch, clr_val[green]);
+		paint_a_line(sb + j * pitch, sb_pitch, hash_get_clr_val(red));
 	for (j = (2 * v)/ 3; j < v; j++)
-		paint_a_line(sb + j * pitch, sb_pitch, clr_val[blue]);
+		paint_a_line(sb + j * pitch, sb_pitch, hash_get_clr_val(red));
+#else
+	paint_buf_recursively(sb, X, v/3, 4, hash_get_clr_val(red));
+	paint_buf_recursively(sb + pitch * v/3, X, v/3, 4, hash_get_clr_val(green));
+	paint_buf_recursively(sb + pitch * 2 * v/3, X, v/3, 4, hash_get_clr_val(blue));
+#endif
 }
+
+#ifdef LINE_BY_LINE
+static void paint_buffer_single_color(char *buf, int bsz, int bpp, uint32_t val)
+{
+	int *ib = (int *)buf;
+	int n_pixels = bsz/bpp;
+
+	wmemset(ib, val, n_pixels);
+}
+#endif
 
 void paint_buffer_tricolor(char *fb, int xres, int yres, int bytes_pp)
 {
@@ -144,8 +219,14 @@ void paint_buffer_tricolor(char *fb, int xres, int yres, int bytes_pp)
 	int buf_sz = yres * pitch;
 	int granularity = yres/3;
 
-	paint_buffer_single_color(fb, buf_sz/3, bytes_pp, clr_val[red]);
-	paint_buffer_single_color(fb + buf_sz/3, buf_sz/3, bytes_pp, clr_val[green]);
-	paint_buffer_single_color(fb + 2 * buf_sz/3, buf_sz/3, bytes_pp, clr_val[blue]);
+#ifdef LINE_BY_LINE
+	paint_buffer_single_color(fb, buf_sz/3, bytes_pp, hash_get_clr_val(red));
+	paint_buffer_single_color(fb + buf_sz/3, buf_sz/3, bytes_pp, hash_get_clr_val(red));
+	paint_buffer_single_color(fb + 2 * buf_sz/3, buf_sz/3, bytes_pp, hash_get_clr_val(red));
+#else
+	paint_buf_recursively(fb, xres, yres/3, 4, hash_get_clr_val(red));
+	paint_buf_recursively(fb + pitch * yres/3, xres, yres/3, 4, hash_get_clr_val(green));
+	paint_buf_recursively(fb + pitch * 2 * yres/3, xres, yres/3, 4, hash_get_clr_val(blue));
+#endif
 
 }
