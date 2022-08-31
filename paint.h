@@ -20,6 +20,31 @@
  *
  */
 
+#define MAX_CLR_SUPPORTED 255
+
+struct clr_hash_data {
+	uint8_t clr;
+	uint64_t val;
+};
+
+struct clr_hash_table {
+	struct clr_hash_data *cval[MAX_CLR_SUPPORTED];
+	int entries;
+};
+
+enum color {
+	black = 0,
+	red,
+	green,
+	blue,
+	white,
+    color_max,
+};
+
+void init_clr_hash(int num, uint32_t *clr_val);
+void delete_clr_hash(int key);
+uint64_t hash_get_clr_val(int key);
+
 char *get_a_subbuffer_copy(char *fb, int X, int Y, int xoff, int yoff, int h, int v, int bpp);
 void blank_a_buffer_region(char *fb, int X, int Y, int x_off, int y_off, int h, int v, int bpp);
 void paint_a_buffer_region_tricolor(char *fb, int X, int Y, int x_off, int y_off, int h, int v, int bpp);

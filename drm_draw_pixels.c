@@ -44,6 +44,14 @@
 /* Verbose */
 uint8_t be_loud;
 
+static uint32_t clr_val[] = {
+	0, /*black */
+	0x00FF0000, /* Red */
+	0x0000FF00, /* Green */
+	0x000000FF, /* Blue */
+	0xFFFFFFFF, /* White */
+};
+
 struct fb {
 	int x;
 	int y;
@@ -358,6 +366,9 @@ int main(void)
 		ret = -1;
 		goto close;
 	}
+
+	/* Setup color table */
+	init_clr_hash(color_max, clr_val);
 
 	/* Draw tricolor lines on buffer */
 	paint_tricolor(&fb);
