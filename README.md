@@ -31,12 +31,15 @@ A very basic and tiny libdrm based tools which:
 
  $ make paint
 
- $ make paint-install
+ $ sudo make paint-install
 
  
  # Build the tools now
 
  $ make
+ 
+ # Install the tools
+ $ sudo make install
  
  # Using these tools:
  
@@ -50,7 +53,7 @@ A very basic and tiny libdrm based tools which:
  
  $ sudo chvt 4 (or maybe ctrl + alt + F4)
  
- $ ./drm_draw_pixels
+ $ sudo ./drm_draw_pixels
 
 
 # fbdev_tools: Framebuffer ecosystem based graphics tools
