@@ -44,14 +44,22 @@ void init_clr_hash(int num, uint32_t *clr_val)
 	table->entries = num;
 }
 
+int hash_get_index(int key)
+{
+	return key % MAX_CLR_SUPPORTED;
+}
+
 uint64_t hash_get_clr_val(int key)
 {
+	int index;
+
 	if (!table || key < 0 || key > table->entries) {
 		printf("Invalid input\n");
 		return -1;
 	}
 
-	return table->cval[key]->val;
+	index = hash_get_index(key);
+	return table->cval[index]->val;
 }
 
 void delete_clr_hash(int key)
